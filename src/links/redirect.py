@@ -8,7 +8,7 @@ from src.models import Link
 
 router = APIRouter()
 
-@router.get("/{short_code}")
+@router.get("/links/{short_code}")
 def redirect_to_original(short_code: str, db: Session = Depends(get_db)):
     """
     Редирект по короткой ссылке.
