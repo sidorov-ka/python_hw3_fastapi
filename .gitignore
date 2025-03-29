@@ -1,4 +1,5 @@
 .env
+init_db.py
 
 # PyCharm project config
 .idea/
