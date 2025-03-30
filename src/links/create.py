@@ -36,6 +36,7 @@ def create_short_link(
         while db.query(Link).filter_by(short_code=short_code).first():
             short_code = uuid4().hex[:6]
 
+    print("Сохраняем ссылку с URL:", payload.original_url)
     # Создание объекта ссылки
     link = Link(
         original_url=str(payload.original_url),  # HttpUrl → str
