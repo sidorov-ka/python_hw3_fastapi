@@ -3,3 +3,5 @@ init_db.py
 
 # PyCharm project config
 .idea/
+__pycache__/
+*.py[cod]
