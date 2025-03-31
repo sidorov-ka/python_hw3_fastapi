@@ -1,41 +1,55 @@
-# Импортируем create_engine для подключения к базе и sessionmaker для создания сессий
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-# Для загрузки переменных окружения из .env
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
+from sqlalchemy.ext.declarative import declarative_base
 
-# Импортируем общий Base (декларативная база для моделей)
-from src.db_base import Base
-
-# Загружаем переменные окружения из .env файла
+# Загрузка переменных окружения
 load_dotenv()
 
-# Получаем строку подключения из переменной окружения
-# Пример: postgresql://postgres:your_password@localhost:5432/url_shortener
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/dbname")
+# Создаём базу для моделей
+Base = declarative_base()
 
-# Создаём движок SQLAlchemy — объект, управляющий подключением к БД
-engine = create_engine(DATABASE_URL)
+# ⏬ Асинхронная часть
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
 
-# Создаём фабрику сессий — будет использоваться в эндпоинтах FastAPI
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+ASYNC_DATABASE_URL = os.getenv(
+    "ASYNC_DATABASE_URL",
+    "postgresql+asyncpg://user:password@localhost/dbname"
+)
 
+async_engine = create_async_engine(ASYNC_DATABASE_URL, echo=True)
 
-# Функция для инициализации таблиц в базе данных
-# Импорт моделей выполняется здесь (внутри), чтобы избежать циклических импортов
-def init_db():
-    from src.models import User, Link
-    # Создаём таблицы в базе на основе всех моделей, унаследованных от Base
-    Base.metadata.create_all(bind=engine)
+AsyncSessionLocal = sessionmaker(
+    bind=async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
 
+async def get_async_session() -> AsyncSession:
+    async with AsyncSessionLocal() as session:
+        yield session
 
-# Зависимость FastAPI — создаёт сессию БД на каждый запрос
-# Используется в хендлерах через Depends(get_db)
+# 🔁 Синхронная часть (используется FastAPI Users)
+from sqlalchemy import create_engine as sync_create_engine
+from sqlalchemy.orm import sessionmaker as sync_sessionmaker
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://user:password@localhost/dbname"
+)
+
+engine = sync_create_engine(DATABASE_URL)
+SessionLocal = sync_sessionmaker(bind=engine, autocommit=False, autoflush=False)
+
 def get_db():
     db = SessionLocal()
     try:
-        yield db  # возвращаем сессию
+        yield db
     finally:
-        db.close()  # обязательно закрываем после запроса
+        db.close()
+
+# Инициализация БД (если нужно вручную создать таблицы)
+async def init_db():
+    async with async_engine.begin() as conn:
+        from src.models import Base  # ✅ Локальный импорт — безопасен
+        await conn.run_sync(Base.metadata.create_all)
