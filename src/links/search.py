@@ -16,13 +16,12 @@ def search_links_by_original_url(
     db: Session = Depends(get_db)
 ):
     """
-    Поиск всех коротких ссылок по оригинальному URL (без учёта регистра, убирая слеш).
+    Поиск всех коротких ссылок по оригинальному URL (без учёта регистра и завершающего слэша).
     """
-    normalized_url = original_url.rstrip("/")
-    cleaned_url = normalized_url.replace("/", "").lower()
+    cleaned_input = original_url.rstrip("/").lower()
 
     links = db.query(Link).filter(
-        func.lower(func.replace(Link.original_url, "/", "")) == cleaned_url
+        func.lower(Link.original_url).like(f"{cleaned_input}%")
     ).all()
 
     if not links:
@@ -35,5 +34,7 @@ def search_links_by_original_url(
             short_url=f"{base_url}/{link.short_code}",
             original_url=link.original_url,
             expires_at=link.expires_at
-        ) for link in links
+        )
+        for link in links
     ]
+

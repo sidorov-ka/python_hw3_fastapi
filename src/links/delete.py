@@ -8,11 +8,12 @@ from src.auth.manager import fastapi_users
 
 router = APIRouter()
 
-@router.delete("/links/{short_code}", status_code=204)
+
+@router.delete("/links/{short_code}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_short_link(
     short_code: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(fastapi_users.current_user(optional=True))
+    current_user: Optional[User] = Depends(fastapi_users.current_user(optional=True)),
 ):
     """
     Удаляет ссылку по short_code.

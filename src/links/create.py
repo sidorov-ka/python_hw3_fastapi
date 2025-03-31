@@ -23,18 +23,15 @@ def create_short_link(
     Создаёт короткую ссылку. Поддерживает кастомные alias и срок жизни ссылки.
     Авторизованный пользователь будет сохранён как владелец ссылки.
     """
-    # Проверка уникальности кастомного alias
     if payload.custom_alias:
         if db.query(Link).filter_by(custom_alias=payload.custom_alias).first():
             raise HTTPException(status_code=400, detail="Alias already in use")
         short_code = payload.custom_alias
     else:
-        # Генерация уникального короткого кода
         short_code = uuid4().hex[:6]
         while db.query(Link).filter_by(short_code=short_code).first():
             short_code = uuid4().hex[:6]
 
-    # Сохраняем ссылку в базу
     new_link = Link(
         original_url=str(payload.original_url),
         short_code=short_code,
@@ -48,8 +45,7 @@ def create_short_link(
     db.commit()
     db.refresh(new_link)
 
-    # Формируем полный короткий URL
-    short_url = f"{request.base_url.rstrip('/')}/{short_code}"
+    short_url = f"{str(request.base_url).rstrip('/')}/{short_code}"
 
     return LinkInfo(
         short_url=short_url,
