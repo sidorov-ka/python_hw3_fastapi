@@ -50,7 +50,7 @@ app.include_router(
 async def whoami(user: User = Depends(current_active_user)):
     return {"email": user.email, "id": user.id}
 
-# Подключение всех твоих роутеров
+# Подключение всех роутеров
 app.include_router(create_router)
 app.include_router(delete_router)
 app.include_router(redirect_router)
